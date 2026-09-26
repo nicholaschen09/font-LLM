@@ -1,10 +1,10 @@
 # font-LLM
 
-FontLens is a prototype product for identifying fonts from images with an LLM vision model. Upload a screenshot, poster, logo, or photo of typography and get ranked font matches, visual reasoning, and suggested alternatives.
+font-LLM is a prototype product for identifying fonts from images with an LLM vision model. Upload a screenshot, poster, logo, or photo of typography and get ranked font matches, visual reasoning, and suggested alternatives.
 
 ## Product Idea
 
-Designers, founders, and brand teams often see typography in the wild and want to know what it is. Traditional font matchers rely on glyph extraction and curated databases. FontLens starts with an LLM vision workflow that can reason about typography in messy real-world images, then can grow into a hybrid system with OCR, glyph matching, and font metadata.
+Designers, founders, and brand teams often see typography in the wild and want to know what it is. Traditional font matchers rely on glyph extraction and curated databases. font-LLM starts with an LLM vision workflow that can reason about typography in messy images, then can grow into a hybrid system with OCR, glyph matching, and font metadata.
 
 ## MVP Flow
 

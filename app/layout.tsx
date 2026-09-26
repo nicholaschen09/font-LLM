@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FontLens",
+  title: "font-LLM",
   description: "Identify fonts from images with LLM vision."
 };
 

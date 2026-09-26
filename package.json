@@ -1,5 +1,5 @@
 {
-  "name": "fontlens",
+  "name": "font-llm",
   "version": "0.1.0",
   "private": true,
   "description": "Identify fonts from images with an LLM vision workflow.",

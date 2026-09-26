@@ -82,8 +82,8 @@ export default function Home() {
     <main className="app-shell">
       <section className="workspace">
         <div className="intro">
-          <p className="eyebrow">FontLens</p>
-          <h1>Identify fonts from real-world images.</h1>
+          <p className="eyebrow">font-LLM</p>
+          <h1>Identify fonts from images</h1>
           <p>
             Upload typography from a screenshot, logo, poster, or photo. The app
             uses an LLM vision prompt to return ranked font guesses and the visual
