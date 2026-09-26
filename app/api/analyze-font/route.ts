@@ -15,10 +15,12 @@ function getModelWaterfall() {
     return defaultModelWaterfall;
   }
 
-  return configuredModels
+  const preferredModels = configuredModels
     .split(",")
     .map((model) => model.trim())
     .filter(Boolean);
+
+  return Array.from(new Set([...preferredModels, ...defaultModelWaterfall]));
 }
 
 export async function POST(request: NextRequest) {
