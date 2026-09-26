@@ -16,6 +16,15 @@ type AnalysisResult = {
   nextSteps: string[];
 };
 
+type AnalysisErrorPayload = {
+  error?: string;
+  attempts?: Array<{
+    model: string;
+    status?: number;
+    message: string;
+  }>;
+};
+
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -63,7 +72,16 @@ export default function Home() {
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Font analysis failed.");
+        const errorPayload = payload as AnalysisErrorPayload;
+        const attemptedModels = errorPayload.attempts
+          ?.map((attempt) => `${attempt.model}${attempt.status ? ` (${attempt.status})` : ""}`)
+          .join(", ");
+
+        throw new Error(
+          attemptedModels
+            ? `${errorPayload.error ?? "Font analysis failed."} Tried: ${attemptedModels}.`
+            : errorPayload.error ?? "Font analysis failed."
+        );
       }
 
       setResult(payload);

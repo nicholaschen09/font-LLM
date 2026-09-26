@@ -23,6 +23,17 @@ function getModelWaterfall() {
   return Array.from(new Set([...preferredModels, ...defaultModelWaterfall]));
 }
 
+function getErrorDetails(error: unknown) {
+  if (!(error instanceof Error)) {
+    return { message: "Unknown error" };
+  }
+
+  return {
+    message: error.message,
+    status: "status" in error ? error.status : undefined
+  };
+}
+
 export async function POST(request: NextRequest) {
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json(
@@ -45,11 +56,12 @@ export async function POST(request: NextRequest) {
   const bytes = Buffer.from(await image.arrayBuffer());
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const models = getModelWaterfall();
-  let lastError: unknown;
+  const attempts: Array<{ model: string; status?: unknown; message: string }> = [];
   let text = "";
 
   for (const model of models) {
     try {
+      console.info(`Trying Gemini model: ${model}`);
       const response = await ai.models.generateContent({
         model,
         contents: [
@@ -110,16 +122,22 @@ export async function POST(request: NextRequest) {
       });
 
       text = response.text ?? "";
+      console.info(`Gemini model succeeded: ${model}`);
       break;
     } catch (error) {
-      lastError = error;
+      const details = getErrorDetails(error);
+      attempts.push({ model, ...details });
+      console.warn(`Gemini model failed: ${model}`, details);
     }
   }
 
   if (!text) {
-    console.error("Gemini model waterfall failed.", lastError);
+    console.error("Gemini model waterfall failed.", attempts);
     return NextResponse.json(
-      { error: "Font analysis failed across all configured Gemini models." },
+      {
+        error: "Font analysis failed across all configured Gemini models.",
+        attempts
+      },
       { status: 502 }
     );
   }
