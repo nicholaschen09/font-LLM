@@ -105,6 +105,16 @@ p {
   border: 1px dashed #aaa39a;
   border-radius: 8px;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.drop-zone.is-dragging {
+  background: #eef7f4;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(15, 107, 95, 0.12);
 }
 
 .drop-zone input {

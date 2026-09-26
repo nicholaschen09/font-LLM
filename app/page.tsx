@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { DragEvent, FormEvent, useMemo, useState } from "react";
 
 type FontMatch = {
   family: string;
@@ -31,6 +31,7 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const canSubmit = useMemo(() => Boolean(file) && !isLoading, [file, isLoading]);
 
@@ -47,6 +48,35 @@ export default function Home() {
     const reader = new FileReader();
     reader.onload = () => setPreviewUrl(String(reader.result ?? ""));
     reader.readAsDataURL(nextFile);
+  }
+
+  function selectImage(nextFile: File | null) {
+    if (nextFile && !nextFile.type.startsWith("image/")) {
+      setFile(null);
+      setResult(null);
+      setPreviewUrl("");
+      setError("Drop an image file.");
+      return;
+    }
+
+    handleFileChange(nextFile);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLLabelElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setIsDragging(false);
+    }
+  }
+
+  function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setIsDragging(false);
+    selectImage(event.dataTransfer.files[0] ?? null);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -110,13 +140,20 @@ export default function Home() {
         </div>
 
         <form className="upload-panel" onSubmit={handleSubmit}>
-          <label className="drop-zone">
+          <label
+            className={`drop-zone${isDragging ? " is-dragging" : ""}`}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
             <input
               accept="image/png,image/jpeg,image/webp"
               type="file"
-              onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
+              onChange={(event) => selectImage(event.target.files?.[0] ?? null)}
             />
-            <span>{file ? file.name : "Choose an image"}</span>
+            <span>
+              {file ? file.name : isDragging ? "Drop image here" : "Choose or drop an image"}
+            </span>
             <small>PNG, JPG, or WebP with visible text</small>
           </label>
 
