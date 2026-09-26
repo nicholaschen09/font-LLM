@@ -1,7 +1,25 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 
-const fallbackModel = "gemini-2.5-flash";
+const defaultModelWaterfall = [
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash"
+];
+
+function getModelWaterfall() {
+  const configuredModels = process.env.GEMINI_MODEL_WATERFALL ?? process.env.GEMINI_MODEL;
+
+  if (!configuredModels) {
+    return defaultModelWaterfall;
+  }
+
+  return configuredModels
+    .split(",")
+    .map((model) => model.trim())
+    .filter(Boolean);
+}
 
 export async function POST(request: NextRequest) {
   if (!process.env.GEMINI_API_KEY) {
@@ -24,67 +42,85 @@ export async function POST(request: NextRequest) {
 
   const bytes = Buffer.from(await image.arrayBuffer());
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const models = getModelWaterfall();
+  let lastError: unknown;
+  let text = "";
 
-  const response = await ai.models.generateContent({
-    model: process.env.GEMINI_MODEL ?? fallbackModel,
-    contents: [
-      {
-        role: "user",
-        parts: [
+  for (const model of models) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: [
           {
-            text:
-              "You are a typography expert. Analyze the typography in this image. Identify likely font families, be honest about uncertainty, and cite visual evidence such as x-height, serifs, terminals, contrast, counters, spacing, and letterform proportions."
-          },
-          {
-            inlineData: {
-              mimeType: image.type,
-              data: bytes.toString("base64")
-            }
-          }
-        ]
-      }
-    ],
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        propertyOrdering: ["summary", "imageQuality", "matches", "nextSteps"],
-        required: ["summary", "imageQuality", "matches", "nextSteps"],
-        properties: {
-          summary: { type: Type.STRING },
-          imageQuality: { type: Type.STRING },
-          matches: {
-            type: Type.ARRAY,
-            minItems: "1",
-            maxItems: "5",
-            items: {
-              type: Type.OBJECT,
-              propertyOrdering: ["family", "confidence", "evidence", "alternatives"],
-              required: ["family", "confidence", "evidence", "alternatives"],
-              properties: {
-                family: { type: Type.STRING },
-                confidence: { type: Type.NUMBER },
-                evidence: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING }
-                },
-                alternatives: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING }
+            role: "user",
+            parts: [
+              {
+                text:
+                  "You are a typography expert. Analyze the typography in this image. Identify likely font families, be honest about uncertainty, and cite visual evidence such as x-height, serifs, terminals, contrast, counters, spacing, and letterform proportions."
+              },
+              {
+                inlineData: {
+                  mimeType: image.type,
+                  data: bytes.toString("base64")
                 }
               }
+            ]
+          }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            propertyOrdering: ["summary", "imageQuality", "matches", "nextSteps"],
+            required: ["summary", "imageQuality", "matches", "nextSteps"],
+            properties: {
+              summary: { type: Type.STRING },
+              imageQuality: { type: Type.STRING },
+              matches: {
+                type: Type.ARRAY,
+                minItems: "1",
+                maxItems: "5",
+                items: {
+                  type: Type.OBJECT,
+                  propertyOrdering: ["family", "confidence", "evidence", "alternatives"],
+                  required: ["family", "confidence", "evidence", "alternatives"],
+                  properties: {
+                    family: { type: Type.STRING },
+                    confidence: { type: Type.NUMBER },
+                    evidence: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING }
+                    },
+                    alternatives: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING }
+                    }
+                  }
+                }
+              },
+              nextSteps: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              }
             }
-          },
-          nextSteps: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING }
           }
         }
-      }
-    }
-  });
+      });
 
-  const text = response.text ?? "";
+      text = response.text ?? "";
+      break;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (!text) {
+    console.error("Gemini model waterfall failed.", lastError);
+    return NextResponse.json(
+      { error: "Font analysis failed across all configured Gemini models." },
+      { status: 502 }
+    );
+  }
 
   try {
     return NextResponse.json(JSON.parse(text));
