@@ -1,4 +1,4 @@
-# FontLens
+# font-LLM
 
 FontLens is a prototype product for identifying fonts from images with an LLM vision model. Upload a screenshot, poster, logo, or photo of typography and get ranked font matches, visual reasoning, and suggested alternatives.
 
